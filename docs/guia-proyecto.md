@@ -152,7 +152,7 @@ Se agrega seguridad después de validar el flujo principal.
 - `passwordHash: String`
 - `rol: Rol`
 - `activo: Boolean`
-- `cliente: Cliente` — nullable para `SUPER_ADMIN`
+- `cliente: Cliente` — nullable para `SUPER_ADMIN`; obligatorio para roles de cliente
 
 ---
 
@@ -166,9 +166,14 @@ public enum TipoContenido {
 
 public enum Rol {
     SUPER_ADMIN,
-    ADMIN_CLIENTE
+    ADMIN_CLIENTE,
+    VISUALIZADOR_CLIENTE
 }
 ```
+
+`SUPER_ADMIN` administra clientes y usuarios. `ADMIN_CLIENTE` administra los
+recursos de su empresa. `VISUALIZADOR_CLIENTE` solo puede consultar sucursales,
+pantallas y la vista previa del contenido asignado; no puede modificar datos.
 
 No es necesario guardar `EstadoPantalla` como enum en el MVP. Si el Android manda heartbeat cada 20 segundos, se puede considerar ONLINE si `ultimaConexion` está dentro del último minuto; caso contrario, OFFLINE.
 
@@ -349,7 +354,7 @@ El player compara `playlistVersion` con su versión local. Si son iguales no hac
 | Dashboard | Resumen de clientes, sucursales, pantallas online/offline. |
 | Clientes | CRUD básico. |
 | Sucursales | Ver/crear sucursales de un cliente. |
-| Pantallas | Ver estado, playlist asignada y última conexión. |
+| Pantallas | Ver estado, playlist asignada, última conexión y vista previa; también permite administrar pantallas según el rol. |
 | Contenidos | Subir y listar imágenes/videos. |
 | Playlists | Crear, ordenar contenidos y asignar a pantallas. |
 | Detalle de sucursal | Controlar rápidamente todas las pantallas de ese local. |
@@ -370,7 +375,7 @@ El player compara `playlistVersion` con su versión local. Si son iguales no hac
 | ETAPA 7 — Control web | React administra contenidos, playlists y asignación a pantallas. |
 | ETAPA 8 — Prueba remota | Notebook en una red y Android en otra red. Cambiar contenido remotamente. |
 | ETAPA 9 — Robustez | Offline, recuperación de errores, logs, límites de storage. |
-| ETAPA 10 — Seguridad | JWT, roles SUPER_ADMIN / ADMIN_CLIENTE, tokens de dispositivo. |
+| ETAPA 10 — Seguridad | JWT, roles SUPER_ADMIN / ADMIN_CLIENTE / VISUALIZADOR_CLIENTE, tokens de dispositivo. |
 | ETAPA 11 — Producto | Autoarranque, kiosco, despliegue cloud, backups y monitoreo. |
 
 ---

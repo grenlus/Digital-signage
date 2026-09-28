@@ -62,6 +62,20 @@ public class SecurityConfig {
                         .requestMatchers("/api/usuarios/**", "/api/clientes/**")
                         .hasRole("SUPER_ADMIN")
 
+                        // El visualizador solo puede consultar las sucursales,
+                        // pantallas y el contenido que compone sus playlists.
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/sucursales/**",
+                                "/api/pantallas/**",
+                                "/api/playlist-contenidos/**",
+                                "/api/contenidos/*/archivo")
+                        .hasAnyRole("SUPER_ADMIN", "ADMIN_CLIENTE", "VISUALIZADOR_CLIENTE")
+
+                        // Las demas lecturas y todas las escrituras quedan
+                        // reservadas a cuentas que administran el cliente.
+                        .requestMatchers("/api/**")
+                        .hasAnyRole("SUPER_ADMIN", "ADMIN_CLIENTE")
+
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(manejadorAcceso)

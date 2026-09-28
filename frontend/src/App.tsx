@@ -22,6 +22,16 @@ function SoloSuperAdmin({ children }: { children: ReactNode }) {
   return sesion?.rol === "SUPER_ADMIN" ? <>{children}</> : <Navigate to="/pantallas" replace />;
 }
 
+/** El visualizador solo tiene acceso a la vista de pantallas. */
+function SoloAdministradorCliente({ children }: { children: ReactNode }) {
+  const { sesion } = useSesion();
+  return sesion?.rol !== "VISUALIZADOR_CLIENTE" ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/pantallas" replace />
+  );
+}
+
 export default function App() {
   return (
     <ProveedorSesion>
@@ -53,9 +63,30 @@ export default function App() {
               }
             />
             <Route path="/pantallas" element={<Pantallas />} />
-            <Route path="/sucursales" element={<Sucursales />} />
-            <Route path="/contenidos" element={<Contenidos />} />
-            <Route path="/playlists" element={<Playlists />} />
+            <Route
+              path="/sucursales"
+              element={
+                <SoloAdministradorCliente>
+                  <Sucursales />
+                </SoloAdministradorCliente>
+              }
+            />
+            <Route
+              path="/contenidos"
+              element={
+                <SoloAdministradorCliente>
+                  <Contenidos />
+                </SoloAdministradorCliente>
+              }
+            />
+            <Route
+              path="/playlists"
+              element={
+                <SoloAdministradorCliente>
+                  <Playlists />
+                </SoloAdministradorCliente>
+              }
+            />
           </Route>
 
           <Route path="*" element={<Navigate to="/pantallas" replace />} />

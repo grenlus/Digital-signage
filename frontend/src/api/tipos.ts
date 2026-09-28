@@ -6,7 +6,7 @@
  * estabilice conviene generarlos desde OpenAPI.
  */
 
-export type Rol = "SUPER_ADMIN" | "ADMIN_CLIENTE";
+export type Rol = "SUPER_ADMIN" | "ADMIN_CLIENTE" | "VISUALIZADOR_CLIENTE";
 
 export type TipoContenido = "VIDEO" | "IMAGEN";
 

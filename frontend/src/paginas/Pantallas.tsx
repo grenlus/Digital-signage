@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, ErrorHttp } from "../api/cliente";
 import type { Pantalla, PantallaCreada, Playlist, Sucursal } from "../api/tipos";
+import { useSesion } from "../auth/SesionContext";
 import TokenPantalla from "../componentes/TokenPantalla";
 import MiniReproductor from "../componentes/MiniReproductor";
 
@@ -12,6 +13,8 @@ import MiniReproductor from "../componentes/MiniReproductor";
  * permite controlar rapido todas las TVs de una sucursal.
  */
 export default function Pantallas() {
+  const { sesion } = useSesion();
+  const soloLectura = sesion?.rol === "VISUALIZADOR_CLIENTE";
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [sucursalId, setSucursalId] = useState<number | null>(null);
   const [pantallas, setPantallas] = useState<Pantalla[]>([]);
@@ -40,20 +43,31 @@ export default function Pantallas() {
 
     const sucursal = sucursales.find((s) => s.id === sucursalId);
 
-    api
-      .get<Pantalla[]>(`/api/pantallas?sucursalId=${sucursalId}`)
-      .then(setPantallas)
-      .catch(mostrarError);
+    function cargarPantallas() {
+      return api
+        .get<Pantalla[]>(`/api/pantallas?sucursalId=${sucursalId}`)
+        .then(setPantallas)
+        .catch(mostrarError);
+    }
+
+    cargarPantallas();
+    const intervalo = soloLectura
+      ? window.setInterval(cargarPantallas, 30000)
+      : undefined;
 
     // Las playlists son del cliente, no de la sucursal: se piden segun a quien
     // pertenece el local que se esta mirando.
-    if (sucursal?.clienteId != null) {
+    if (!soloLectura && sucursal?.clienteId != null) {
       api
         .get<Playlist[]>(`/api/playlists?clienteId=${sucursal.clienteId}`)
         .then(setPlaylists)
         .catch(mostrarError);
     }
-  }, [sucursalId, sucursales]);
+
+    return () => {
+      if (intervalo) window.clearInterval(intervalo);
+    };
+  }, [sucursalId, sucursales, soloLectura]);
 
   function mostrarError(err: unknown) {
     setError(
@@ -161,15 +175,28 @@ export default function Pantallas() {
     <>
       <h1>Pantallas</h1>
 
+      {soloLectura && (
+        <p className="ayuda">
+          Acceso de solo lectura: podés consultar el estado y la vista previa del
+          contenido asignado a las pantallas, pero no modificarlas.
+        </p>
+      )}
+
       {error && <p className="error">{error}</p>}
 
       {sucursales.length === 0 ? (
         <div className="tarjeta vacio">
-          <p>Todavía no hay sucursales cargadas.</p>
-          <p className="sutil">
-            Una pantalla siempre pertenece a una sucursal, así que hay que crear
-            una antes de poder darla de alta.
+          <p>
+            {soloLectura
+              ? "Este cliente todavía no tiene sucursales para consultar."
+              : "Todavía no hay sucursales cargadas."}
           </p>
+          {!soloLectura && (
+            <p className="sutil">
+              Una pantalla siempre pertenece a una sucursal, así que hay que crear
+              una antes de poder darla de alta.
+            </p>
+          )}
         </div>
       ) : (
         <>
@@ -188,43 +215,49 @@ export default function Pantallas() {
             </select>
           </label>
 
-          <form className="tarjeta fila-form" onSubmit={crearPantalla}>
-            <label className="crecer">
-              Nombre de la pantalla
-              <input
-                value={nombreNueva}
-                onChange={(e) => setNombreNueva(e.target.value)}
-                placeholder="TV Entrada"
-                required
-              />
-            </label>
-            <label className="crecer">
-              Código del dispositivo
-              <input
-                className="mono"
-                value={codigoNueva}
-                onChange={(e) => setCodigoNueva(e.target.value)}
-                required
-              />
-            </label>
-            <button
-              type="button"
-              className="secundario"
-              onClick={() => setCodigoNueva(sugerirCodigo())}
-              title="Sugerir otro código"
-            >
-              ↻
-            </button>
-            <button type="submit">Dar de alta</button>
-          </form>
+          {!soloLectura && (
+            <form className="tarjeta fila-form" onSubmit={crearPantalla}>
+              <label className="crecer">
+                Nombre de la pantalla
+                <input
+                  value={nombreNueva}
+                  onChange={(e) => setNombreNueva(e.target.value)}
+                  placeholder="TV Entrada"
+                  required
+                />
+              </label>
+              <label className="crecer">
+                Código del dispositivo
+                <input
+                  className="mono"
+                  value={codigoNueva}
+                  onChange={(e) => setCodigoNueva(e.target.value)}
+                  required
+                />
+              </label>
+              <button
+                type="button"
+                className="secundario"
+                onClick={() => setCodigoNueva(sugerirCodigo())}
+                title="Sugerir otro código"
+              >
+                ↻
+              </button>
+              <button type="submit">Dar de alta</button>
+            </form>
+          )}
 
           {pantallas.length === 0 ? (
             <div className="tarjeta vacio">
-              <p>Esta sucursal no tiene pantallas.</p>
+              <p>
+                {soloLectura
+                  ? "Esta sucursal todavía no tiene pantallas."
+                  : "Esta sucursal no tiene pantallas."}
+              </p>
             </div>
           ) : (
             <>
-              {pantallas.length > 1 && (
+              {!soloLectura && pantallas.length > 1 && (
                 <div className="tarjeta fila-form">
                   <label className="crecer">
                     Aplicar a las {pantallas.length} pantallas del local
@@ -257,7 +290,7 @@ export default function Pantallas() {
                   <th>Última conexión</th>
                   <th>Playlist</th>
                   <th>Vista previa</th>
-                  <th></th>
+                  {!soloLectura && <th></th>}
                 </tr>
               </thead>
               <tbody>
@@ -270,42 +303,48 @@ export default function Pantallas() {
                     </td>
                     <td>{p.nombre}</td>
                     <td>
-                      <button
-                        className={`interruptor ${p.encendida ? "prendido" : ""}`}
-                        onClick={() => alternarEncendido(p)}
-                        title={p.encendida ? "Apagar la pantalla" : "Prender la pantalla"}
-                        aria-pressed={p.encendida}
-                      >
-                        <span className="perilla" />
-                      </button>
+                      {soloLectura ? (p.encendida ? "Sí" : "No") : (
+                        <button
+                          className={`interruptor ${p.encendida ? "prendido" : ""}`}
+                          onClick={() => alternarEncendido(p)}
+                          title={p.encendida ? "Apagar la pantalla" : "Prender la pantalla"}
+                          aria-pressed={p.encendida}
+                        >
+                          <span className="perilla" />
+                        </button>
+                      )}
                     </td>
                     <td className="mono">{p.codigo}</td>
                     <td className="sutil">{formatearFecha(p.ultimaConexion)}</td>
                     <td>
-                      <select
-                        value={p.playlistId ?? ""}
-                        onChange={(e) => asignarPlaylist(p.id, e.target.value)}
-                      >
-                        <option value="">— sin contenido —</option>
-                        {playlists.map((pl) => (
-                          <option key={pl.id} value={pl.id}>
-                            {pl.nombre}
-                          </option>
-                        ))}
-                      </select>
+                      {soloLectura ? p.playlistNombre ?? "— sin contenido —" : (
+                        <select
+                          value={p.playlistId ?? ""}
+                          onChange={(e) => asignarPlaylist(p.id, e.target.value)}
+                        >
+                          <option value="">— sin contenido —</option>
+                          {playlists.map((pl) => (
+                            <option key={pl.id} value={pl.id}>
+                              {pl.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td>
                       <MiniReproductor playlistId={p.playlistId} encendida={p.encendida} />
                     </td>
-                    <td>
-                      <button
-                        className="secundario"
-                        onClick={() => regenerarToken(p)}
-                        title="Genera un token nuevo e invalida el anterior"
-                      >
-                        Token
-                      </button>
-                    </td>
+                    {!soloLectura && (
+                      <td>
+                        <button
+                          className="secundario"
+                          onClick={() => regenerarToken(p)}
+                          title="Genera un token nuevo e invalida el anterior"
+                        >
+                          Token
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

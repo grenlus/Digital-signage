@@ -11,10 +11,9 @@ const EQUIPO = "grenlus";
  * Quién puede entrar al panel.
  *
  * Se elige primero de quién son los usuarios: el equipo de Grenlus
- * (SUPER_ADMIN, ven todo) o un cliente (ADMIN_CLIENTE, ven solo lo suyo). El
- * rol y el cliente salen de esa elección y no de un campo del formulario: así
- * no se puede crear por error un SUPER_ADMIN ni colgar un usuario del cliente
- * equivocado.
+ * (SUPER_ADMIN, ven todo) o un cliente (ADMIN_CLIENTE o VISUALIZADOR_CLIENTE,
+ * ven solo lo suyo). El cliente sale de esa elección para no colgar un usuario
+ * del cliente equivocado.
  *
  * Solo la ve un SUPER_ADMIN, igual que el endpoint.
  */
@@ -34,6 +33,7 @@ export default function Usuarios() {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rolCliente, setRolCliente] = useState<Rol>("ADMIN_CLIENTE");
 
   const esEquipo = grupo === EQUIPO;
   const clienteId = esEquipo ? null : Number(grupo);
@@ -71,6 +71,7 @@ export default function Usuarios() {
     setNombre("");
     setEmail("");
     setPassword("");
+    setRolCliente("ADMIN_CLIENTE");
   }
 
   function editar(usuario: Usuario) {
@@ -78,6 +79,7 @@ export default function Usuarios() {
     setNombre(usuario.nombre);
     setEmail(usuario.email);
     setPassword("");
+    setRolCliente(usuario.rol === "VISUALIZADOR_CLIENTE" ? usuario.rol : "ADMIN_CLIENTE");
     setAviso(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -87,7 +89,7 @@ export default function Usuarios() {
     setError(null);
     setAviso(null);
 
-    const rol: Rol = esEquipo ? "SUPER_ADMIN" : "ADMIN_CLIENTE";
+    const rol: Rol = esEquipo ? "SUPER_ADMIN" : rolCliente;
     const cuerpo = {
       nombre,
       email,
@@ -167,7 +169,7 @@ export default function Usuarios() {
       <p className="sutil ayuda">
         {esEquipo
           ? "Administradores de Grenlus: crean clientes y usuarios, y ven los datos de todos."
-          : "Solo ven y administran las sucursales, pantallas, contenidos y playlists de este cliente."}
+          : "Elegí si la cuenta podrá administrar las pantallas de este cliente o solo consultar qué se está mostrando."}
       </p>
 
       {clienteElegido && !clienteElegido.activo && (
@@ -226,6 +228,24 @@ export default function Usuarios() {
             autoComplete="new-password"
           />
         </label>
+        {!esEquipo && (
+          <label className="crecer">
+            Acceso
+            <select
+              value={rolCliente}
+              onChange={(e) =>
+                setRolCliente(
+                  e.target.value === "VISUALIZADOR_CLIENTE"
+                    ? "VISUALIZADOR_CLIENTE"
+                    : "ADMIN_CLIENTE",
+                )
+              }
+            >
+              <option value="ADMIN_CLIENTE">Administrador — puede modificar pantallas</option>
+              <option value="VISUALIZADOR_CLIENTE">Solo lectura — ver pantallas</option>
+            </select>
+          </label>
+        )}
         <button
           type="button"
           className="secundario"
@@ -262,6 +282,7 @@ export default function Usuarios() {
               <th>Estado</th>
               <th>Nombre</th>
               <th>Email</th>
+              {!esEquipo && <th>Acceso</th>}
               <th></th>
             </tr>
           </thead>
@@ -278,6 +299,11 @@ export default function Usuarios() {
                   {soyYo(u) && <span className="etiqueta separada">VOS</span>}
                 </td>
                 <td className="sutil">{u.email}</td>
+                {!esEquipo && (
+                  <td>
+                    {u.rol === "VISUALIZADOR_CLIENTE" ? "Solo lectura" : "Administrador"}
+                  </td>
+                )}
                 <td className="acciones">
                   <button className="secundario" onClick={() => editar(u)}>
                     Editar

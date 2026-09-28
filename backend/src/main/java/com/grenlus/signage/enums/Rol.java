@@ -2,11 +2,11 @@ package com.grenlus.signage.enums;
 
 /**
  * Rol del usuario que accede al panel web.
- * SUPER_ADMIN es global (Usuario.cliente queda null); ADMIN_CLIENTE
- * solo ve los datos del cliente al que pertenece.
- * La seguridad real (JWT) recien se implementa en la Etapa 10.
+ * SUPER_ADMIN es global (Usuario.cliente queda null); los roles de cliente
+ * solo acceden a los datos de la empresa a la que pertenecen.
  */
 public enum Rol {
     SUPER_ADMIN,
-    ADMIN_CLIENTE
+    ADMIN_CLIENTE,
+    VISUALIZADOR_CLIENTE
 }
