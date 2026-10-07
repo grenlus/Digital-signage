@@ -110,6 +110,26 @@ export default function Playlists() {
     }
   }
 
+  async function desactivar(playlist: Playlist) {
+    if (
+      !window.confirm(
+        `¿Dar de baja a ${playlist.nombre}? Las pantallas que ya la tienen asignada seguirán reproduciéndola.`,
+      )
+    ) {
+      return;
+    }
+
+    setError(null);
+    try {
+      await api.del(`/api/playlists/${playlist.id}`);
+      setPlaylists((previas) => previas.filter((p) => p.id !== playlist.id));
+      setSeleccionada(null);
+      setItems([]);
+    } catch (err) {
+      mostrarError(err);
+    }
+  }
+
   /** La version la calcula el backend; se relee para mostrarla al dia. */
   async function refrescarVersion() {
     if (!seleccionada) return;
@@ -201,6 +221,12 @@ export default function Playlists() {
                     para decidir si resincroniza
                   </p>
                 </div>
+                <button
+                  className="secundario"
+                  onClick={() => desactivar(seleccionada)}
+                >
+                  Dar de baja
+                </button>
               </div>
 
               <form className="fila-form" onSubmit={agregarItem}>
