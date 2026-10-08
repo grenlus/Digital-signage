@@ -51,9 +51,11 @@ export default function Pantallas() {
     }
 
     cargarPantallas();
-    const intervalo = soloLectura
-      ? window.setInterval(cargarPantallas, 30000)
-      : undefined;
+    const actualizarSiVisible = () => {
+      if (document.visibilityState === "visible") void cargarPantallas();
+    };
+    const intervalo = window.setInterval(actualizarSiVisible, 15000);
+    document.addEventListener("visibilitychange", actualizarSiVisible);
 
     // Las playlists son del cliente, no de la sucursal: se piden segun a quien
     // pertenece el local que se esta mirando.
@@ -65,7 +67,8 @@ export default function Pantallas() {
     }
 
     return () => {
-      if (intervalo) window.clearInterval(intervalo);
+      window.clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", actualizarSiVisible);
     };
   }, [sucursalId, sucursales, soloLectura]);
 
